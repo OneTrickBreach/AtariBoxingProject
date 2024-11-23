@@ -27,10 +27,10 @@ class DQNAgent:
         self.epsilon_decay = epsilon_decay
         
         # Create the Q-network (CNN-based)
-        self.q_network = CNNModel(input_channels=input_channels, num_actions=num_actions)
-        
+        self.q_network = CNNModel(input_channels=12, num_actions=num_actions)
+
         # Target network for stability in training
-        self.target_network = CNNModel(input_channels=input_channels, num_actions=num_actions)
+        self.target_network = CNNModel(input_channels=12, num_actions=num_actions)  # Fix here
         self.target_network.load_state_dict(self.q_network.state_dict())
         
         # Optimizer
@@ -67,8 +67,6 @@ class DQNAgent:
             with torch.no_grad():
                 q_values = self.q_network(state)
             return q_values.argmax().item()
-
-    # agents/agent.py
 
     def update(self, batch):
         """
