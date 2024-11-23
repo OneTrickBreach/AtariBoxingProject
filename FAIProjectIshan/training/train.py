@@ -2,11 +2,31 @@
 
 import torch
 import numpy as np
+from torchvision.transforms import Compose, Resize, Normalize, ToTensor
 from agents.multi_agent import MultiAgentRL
 from training.replay_buffer import ReplayBuffer
 from training.utils import save_checkpoint
 
-# training/train.py
+# Define preprocessing transform
+preprocess = Compose([
+    ToTensor(),  # Convert to tensor
+    Resize((8, 8)),  # Resize 
+    Normalize(mean=[0.5], std=[0.5])  # Normalize to [-1, 1]
+])
+
+
+def preprocess_observation(obs):
+    """
+    Preprocess a single observation (resize, normalize, and permute dimensions).
+
+    Args:
+        obs (np.ndarray): Input observation in HWC format.
+
+    Returns:
+        torch.Tensor: Preprocessed observation in CHW format.
+    """
+    return preprocess(obs).permute(2, 0, 1)  # HWC -> CHW
+
 
 def train(num_episodes=1000, batch_size=32, target_update_freq=10, gamma=0.99):
     """
@@ -26,6 +46,10 @@ def train(num_episodes=1000, batch_size=32, target_update_freq=10, gamma=0.99):
         # Extract observations from the first element of the tuple
         obs_dict = obs_tuple[0]  # This is where observations are stored
 
+        # Preprocess observations for both agents
+        obs_dict["first_0"] = preprocess_observation(obs_dict["first_0"])
+        obs_dict["second_0"] = preprocess_observation(obs_dict["second_0"])
+
         done_flags = {"first_0": False, "second_0": False}
 
         episode_reward = {"first_0": 0, "second_0": 0}
@@ -42,6 +66,10 @@ def train(num_episodes=1000, batch_size=32, target_update_freq=10, gamma=0.99):
 
             # Unpack all five values returned by step()
             next_obs_dict, rewards_dict, terminations, truncations, infos = next_obs_tuple
+
+            # Preprocess next observations for both agents
+            next_obs_dict["first_0"] = preprocess_observation(next_obs_dict["first_0"])
+            next_obs_dict["second_0"] = preprocess_observation(next_obs_dict["second_0"])
 
             # Store transitions in replay buffer (for both agents)
             buffer.add(obs_dict["first_0"], action_1, rewards_dict["first_0"], next_obs_dict["first_0"], terminations["first_0"])
@@ -71,6 +99,7 @@ def train(num_episodes=1000, batch_size=32, target_update_freq=10, gamma=0.99):
         if episode % 50 == 0:
             save_checkpoint(multi_agent.agent_1.q_network.state_dict(), f"checkpoints/agent1_episode_{episode}.pth")
             save_checkpoint(multi_agent.agent_2.q_network.state_dict(), f"checkpoints/agent2_episode_{episode}.pth")
+
 
 if __name__ == "__main__":
     train(num_episodes=10000)
