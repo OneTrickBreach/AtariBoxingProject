@@ -5,6 +5,7 @@ import numpy as np
 from agents.multi_agent import MultiAgentRL
 from training.replay_buffer import ReplayBuffer
 from training.utils import save_checkpoint
+from pettingzoo.atari import boxing_v2
 
 # Preprocessing pipeline for observations
 preprocess = Compose([
@@ -40,11 +41,14 @@ def preprocess_observation(obs):
  # Ensure correct shape (C, H, W)
   # Ensure correct shape (C, H, W)
 
-def train(num_episodes=1000, batch_size=32, target_update_freq=10, gamma=0.99):
+def train(num_episodes=10, batch_size=32, target_update_freq=10, gamma=0.99):
     """
     Main training loop for multi-agent reinforcement learning.
     """
-    multi_agent = MultiAgentRL()  # Initialize the multi-agent environment
+    # Initialize the multi-agent environment with GUI disabled for training
+    multi_agent = MultiAgentRL()
+    multi_agent.env = boxing_v2.parallel_env(render_mode=None)  # Disable rendering for training
+
     buffer = ReplayBuffer(capacity=10000)  # Initialize replay buffer
 
     for episode in range(num_episodes):
@@ -54,7 +58,6 @@ def train(num_episodes=1000, batch_size=32, target_update_freq=10, gamma=0.99):
         # Initialize observation stacks with the first observation (repeated 4 times)
         obs_stack_1 = torch.cat([preprocess_observation(obs_dict["first_0"]).unsqueeze(0)] * 4, dim=0)
         obs_stack_2 = torch.cat([preprocess_observation(obs_dict["second_0"]).unsqueeze(0)] * 4, dim=0)
-
 
         # Flags to track termination status
         done_flags = {"first_0": False, "second_0": False}
@@ -106,5 +109,33 @@ def train(num_episodes=1000, batch_size=32, target_update_freq=10, gamma=0.99):
             save_checkpoint(multi_agent.agent_1.q_network.state_dict(), f"checkpoints/agent1_episode_{episode}.pth")
             save_checkpoint(multi_agent.agent_2.q_network.state_dict(), f"checkpoints/agent2_episode_{episode}.pth")
 
-if __name__ == "__main__":
-    train(num_episodes=10000)
+    print("Training completed!")
+
+
+def evaluate(num_eval_games=1):
+    """
+    Evaluate the trained agents in the environment with GUI enabled.
+    """
+    # Re-enable GUI rendering for evaluation
+    multi_agent = MultiAgentRL()
+    multi_agent.env = boxing_v2.parallel_env(render_mode="human")  # Enable rendering for evaluation
+
+    for game in range(num_eval_games):
+        obs_tuple = multi_agent.reset_environment()
+        obs_dict = obs_tuple[0]
+
+        done_flags = {"first_0": False, "second_0": False}
+        total_rewards = {"first_0": 0, "second_0": 0}
+
+        while not all(done_flags.values()):
+            action_1 = multi_agent.agent_1.select_action(obs_dict["first_0"], step=0)
+            action_2 = multi_agent.agent_2.select_action(obs_dict["second_0"], step=0)
+
+            actions = {"first_0": action_1, "second_0": action_2}
+            obs_tuple = multi_agent.step(actions)
+
+            obs_dict, rewards_dict, done_flags, truncations, infos = obs_tuple
+            total_rewards["first_0"] += rewards_dict["first_0"]
+            total_rewards["second_0"] += rewards_dict["second_0"]
+
+        print(f"Game {game + 1} - Agent 1 Reward: {total_rewards['first_0']}, Agent 2 Reward: {total_rewards['second_0']}")

@@ -88,7 +88,7 @@ class DQNAgent:
         dones = torch.FloatTensor(dones).to(self.device)
 
         # Print the shape of states before passing into CNN
-        print(f"State shape before passing into CNN: {states.shape}")
+        # print(f"State shape before passing into CNN: {states.shape}")
 
         # Compute current Q-values from q_network
         q_values = self.q_network(states).gather(1, actions.unsqueeze(1)).squeeze(1)
