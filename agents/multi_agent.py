@@ -12,7 +12,7 @@ class MultiAgentRL:
          """
         
         # Create environment instance from PettingZoo's Boxing environment
-        self.env = boxing_v2.parallel_env()
+        self.env = boxing_v2.parallel_env(render_mode="human")
          
         # Number of possible actions in Boxing environment (6 discrete actions per player)
         num_actions = self.env.action_space('first_0').n
