@@ -34,19 +34,44 @@ class MultiAgentRL:
 
     def step(self, actions):
         """
-        Take a step in the environment with both agents' actions.
+        Take a step in the environment with custom rewards.
 
         Args:
-            actions (dict): Dictionary containing actions for both agents.
+            actions (dict): Actions for each agent.
 
         Returns:
-            dict: Observations after taking a step in the environment.
-            dict: Rewards received by both agents after taking their respective actions.
-            dict: Done flags indicating whether each agent has finished its episode.
-            dict: Additional info from environment.
+            obs_dict_next, custom_rewards, terminations, truncations, info
         """
-        return self.env.step(actions)
+        obs_dict_next, rewards_dict, terminations, truncations, info = self.env.step(actions)
 
+        # Example: Extract agent positions and punches from environment info
+        agent_positions = {
+            "first_0": info.get("first_0_position"),
+            "second_0": info.get("second_0_position")
+        }
+        punches = {
+            "first_0": info.get("first_0_punches", 0),
+            "second_0": info.get("second_0_punches", 0)
+        }
+
+        # Determine winner if the episode ends
+        winner = None
+        if any(terminations.values()):
+            if rewards_dict["first_0"] > rewards_dict["second_0"]:
+                winner = "first_0"
+            elif rewards_dict["second_0"] > rewards_dict["first_0"]:
+                winner = "second_0"
+
+        # Calculate custom rewards
+        custom_rewards = calculate_rewards(
+            obs_dict_next, rewards_dict, agent_positions, punches, terminations, winner
+        )
+
+        return obs_dict_next, custom_rewards, terminations, truncations, info
+    
+    
+    
+    
     def train_agents(self, num_episodes=1000, batch_size=32, target_update_freq=100):
         """
         Main loop for training both agents in parallel mode. This can include logic such as replay buffer,
@@ -86,3 +111,31 @@ class MultiAgentRL:
             if episode % 10 == 0:
                 print(f"Episode {episode}/{num_episodes} completed.")
 
+def calculate_rewards(obs_dict, rewards_dict, agent_positions, punches, terminations, winner=None):
+    custom_rewards = {"first_0": 0.0, "second_0": 0.0}
+
+    # Safe distance-based reward: Check if both positions are available
+    if agent_positions.get("first_0") is not None and agent_positions.get("second_0") is not None:
+        distance = abs(agent_positions["first_0"] - agent_positions["second_0"])  # Example metric
+        distance_reward = 1.0 / (distance + 1)  # Closer distance gives higher reward
+        custom_rewards["first_0"] += distance_reward
+        custom_rewards["second_0"] += distance_reward
+
+    # Punch-Based Reward
+    custom_rewards["first_0"] += punches.get("first_0", 0) * 2.0  # Reward for landing a punch
+    custom_rewards["second_0"] += punches.get("second_0", 0) * 2.0
+
+    # Winning Reward (applied at the end of the episode)
+    if any(terminations.values()) and winner:
+        if winner == "first_0":
+            custom_rewards["first_0"] += 10.0  # Winning bonus
+            custom_rewards["second_0"] -= 5.0  # Losing penalty
+        elif winner == "second_0":
+            custom_rewards["second_0"] += 10.0
+            custom_rewards["first_0"] -= 5.0
+
+    # Add base rewards from the environment
+    custom_rewards["first_0"] += rewards_dict.get("first_0", 0)
+    custom_rewards["second_0"] += rewards_dict.get("second_0", 0)
+
+    return custom_rewards

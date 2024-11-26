@@ -12,7 +12,7 @@ def main():
                         help="Mode to run the script: 'train' for training, 'evaluate' for evaluation.")
     
     # Training hyperparameters
-    parser.add_argument('--num_episodes', type=int, default=1000,
+    parser.add_argument('--num_episodes', type=int, default=1,
                         help="Number of episodes to train or evaluate.")
     parser.add_argument('--batch_size', type=int, default=32,
                         help="Batch size for experience replay during training.")
@@ -40,12 +40,15 @@ def main():
     if args.mode == 'train':
         print(f"Starting training for {args.num_episodes} episodes...")
         train(num_episodes=args.num_episodes, 
-              batch_size=args.batch_size, 
-              target_update_freq=args.target_update_freq, 
-              gamma=args.gamma)
+      batch_size=args.batch_size, 
+      target_update_freq=args.target_update_freq, 
+      gamma=args.gamma,
+      checkpoint_dir=args.checkpoint_dir)  # Pass checkpoint_dir
+
     elif args.mode == 'evaluate':
         print(f"Evaluating agents over {args.num_eval_games} games...")
-        evaluate(num_eval_games=args.num_eval_games)
+        evaluate(num_eval_games=args.num_eval_games, 
+         checkpoint_dir=args.checkpoint_dir)  # Pass checkpoint_dir
 
 if __name__ == "__main__":
     main()
