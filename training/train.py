@@ -1,10 +1,11 @@
 import torch
+import os
 from torchvision import transforms
 from torchvision.transforms import Compose, ToTensor, Resize, Normalize
 import numpy as np
 from agents.multi_agent import MultiAgentRL
 from training.replay_buffer import ReplayBuffer
-from training.utils import save_checkpoint
+from training.utils import save_checkpoint,load_checkpoint
 from pettingzoo.atari import boxing_v2
 
 # Preprocessing pipeline for observations
@@ -41,15 +42,29 @@ def preprocess_observation(obs):
  # Ensure correct shape (C, H, W)
   # Ensure correct shape (C, H, W)
 
-def train(num_episodes=10, batch_size=32, target_update_freq=10, gamma=0.99):
+def train(num_episodes=100, batch_size=32, target_update_freq=10, gamma=0.99, checkpoint_dir="checkpoints", num_eval_games=10):
     """
-    Main training loop for multi-agent reinforcement learning.
+    Main training loop for multi-agent reinforcement learning with automatic evaluation post-training.
     """
-    # Initialize the multi-agent environment with GUI disabled for training
+    # Initialize the multi-agent environment
     multi_agent = MultiAgentRL()
-    multi_agent.env = boxing_v2.parallel_env(render_mode=None)  # Disable rendering for training
+    multi_agent.env = boxing_v2.parallel_env(render_mode="human")  # Disable rendering for training
 
     buffer = ReplayBuffer(capacity=10000)  # Initialize replay buffer
+
+    # Load checkpoints if available
+    agent1_checkpoint = os.path.join(checkpoint_dir, "agent1_latest.pth")
+    agent2_checkpoint = os.path.join(checkpoint_dir, "agent2_latest.pth")
+
+    if os.path.exists(agent1_checkpoint):
+        print(f"Loading Agent 1 checkpoint from {agent1_checkpoint}")
+        multi_agent.agent_1.q_network.load_state_dict(load_checkpoint(agent1_checkpoint))
+        multi_agent.agent_1.update_target_network()
+
+    if os.path.exists(agent2_checkpoint):
+        print(f"Loading Agent 2 checkpoint from {agent2_checkpoint}")
+        multi_agent.agent_2.q_network.load_state_dict(load_checkpoint(agent2_checkpoint))
+        multi_agent.agent_2.update_target_network()
 
     for episode in range(num_episodes):
         obs_tuple = multi_agent.reset_environment()  # Reset the environment
@@ -106,19 +121,40 @@ def train(num_episodes=10, batch_size=32, target_update_freq=10, gamma=0.99):
 
         # Save model checkpoints periodically
         if episode % 50 == 0:
-            save_checkpoint(multi_agent.agent_1.q_network.state_dict(), f"checkpoints/agent1_episode_{episode}.pth")
-            save_checkpoint(multi_agent.agent_2.q_network.state_dict(), f"checkpoints/agent2_episode_{episode}.pth")
+            save_checkpoint(multi_agent.agent_1.q_network.state_dict(), os.path.join(checkpoint_dir, "agent1_latest.pth"))
+            save_checkpoint(multi_agent.agent_2.q_network.state_dict(), os.path.join(checkpoint_dir, "agent2_latest.pth"))
 
     print("Training completed!")
 
+    # Automatic evaluation after training
+    print(f"Starting automatic evaluation with {num_eval_games} games...")
+    from training.evaluation import evaluate
+    evaluate(num_eval_games=num_eval_games, checkpoint_dir=checkpoint_dir)
 
-def evaluate(num_eval_games=1):
+
+
+def evaluate(num_eval_games=1, checkpoint_dir="checkpoints"):
     """
     Evaluate the trained agents in the environment with GUI enabled.
+    Loads the latest checkpoints for agents before evaluation.
     """
-    # Re-enable GUI rendering for evaluation
+    # Initialize the multi-agent system
     multi_agent = MultiAgentRL()
     multi_agent.env = boxing_v2.parallel_env(render_mode="human")  # Enable rendering for evaluation
+
+    # Load checkpoints if available
+    agent1_checkpoint = os.path.join(checkpoint_dir, "agent1_latest.pth")
+    agent2_checkpoint = os.path.join(checkpoint_dir, "agent2_latest.pth")
+
+    if os.path.exists(agent1_checkpoint):
+        print(f"Loading Agent 1 checkpoint from {agent1_checkpoint}")
+        multi_agent.agent_1.q_network.load_state_dict(load_checkpoint(agent1_checkpoint))
+        multi_agent.agent_1.update_target_network()  # Synchronize target network
+
+    if os.path.exists(agent2_checkpoint):
+        print(f"Loading Agent 2 checkpoint from {agent2_checkpoint}")
+        multi_agent.agent_2.q_network.load_state_dict(load_checkpoint(agent2_checkpoint))
+        multi_agent.agent_2.update_target_network()  # Synchronize target network
 
     for game in range(num_eval_games):
         obs_tuple = multi_agent.reset_environment()
@@ -128,8 +164,9 @@ def evaluate(num_eval_games=1):
         total_rewards = {"first_0": 0, "second_0": 0}
 
         while not all(done_flags.values()):
-            action_1 = multi_agent.agent_1.select_action(obs_dict["first_0"], step=0)
-            action_2 = multi_agent.agent_2.select_action(obs_dict["second_0"], step=0)
+            # Agents select actions based on their trained Q-networks
+            action_1 = multi_agent.agent_1.select_action(obs_dict["first_0"], step=0, eval_mode=True)
+            action_2 = multi_agent.agent_2.select_action(obs_dict["second_0"], step=0, eval_mode=True)
 
             actions = {"first_0": action_1, "second_0": action_2}
             obs_tuple = multi_agent.step(actions)
@@ -139,3 +176,6 @@ def evaluate(num_eval_games=1):
             total_rewards["second_0"] += rewards_dict["second_0"]
 
         print(f"Game {game + 1} - Agent 1 Reward: {total_rewards['first_0']}, Agent 2 Reward: {total_rewards['second_0']}")
+
+    print("Evaluation completed!")
+
