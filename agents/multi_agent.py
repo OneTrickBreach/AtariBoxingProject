@@ -113,25 +113,17 @@ class MultiAgentRL:
 
 def calculate_rewards(obs_dict, rewards_dict, agent_positions, punches, terminations, winner=None):
     custom_rewards = {"first_0": 0.0, "second_0": 0.0}
-
-    # Safe distance-based reward: Check if both positions are available
-    if agent_positions.get("first_0") is not None and agent_positions.get("second_0") is not None:
-        distance = abs(agent_positions["first_0"] - agent_positions["second_0"])  # Example metric
-        distance_reward = 1.0 / (distance + 1)  # Closer distance gives higher reward
-        custom_rewards["first_0"] += distance_reward
-        custom_rewards["second_0"] += distance_reward
-
     # Punch-Based Reward
-    custom_rewards["first_0"] += punches.get("first_0", 0) * 2.0  # Reward for landing a punch
-    custom_rewards["second_0"] += punches.get("second_0", 0) * 2.0
+    custom_rewards["first_0"] += punches.get("first_0", 0) * 20.0  # Reward for landing a punch
+    custom_rewards["second_0"] += punches.get("second_0", 0) * 20.0
 
     # Winning Reward (applied at the end of the episode)
     if any(terminations.values()) and winner:
         if winner == "first_0":
-            custom_rewards["first_0"] += 10.0  # Winning bonus
+            custom_rewards["first_0"] += 10000.0  # Winning bonus
             custom_rewards["second_0"] -= 5.0  # Losing penalty
         elif winner == "second_0":
-            custom_rewards["second_0"] += 10.0
+            custom_rewards["second_0"] += 10000.0
             custom_rewards["first_0"] -= 5.0
 
     # Add base rewards from the environment

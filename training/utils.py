@@ -15,6 +15,7 @@ def save_checkpoint(model_state_dict, filename):
     
 def load_checkpoint(filename):
     """
-    Load model checkpoint.
+    Load model checkpoint on the appropriate device.
     """
-    return torch.load(filename)
+    return torch.load(filename, map_location=torch.device('cpu'))
+
