@@ -33,18 +33,14 @@ class MultiAgentRL:
         return self.env.reset()
 
     def step(self, actions):
-        """
-        Take a step in the environment with custom rewards.
-
-        Args:
-            actions (dict): Actions for each agent.
-
-        Returns:
-            obs_dict_next, custom_rewards, terminations, truncations, info
-        """
+    
         obs_dict_next, rewards_dict, terminations, truncations, info = self.env.step(actions)
-
-        # Example: Extract agent positions and punches from environment info
+    
+        # Ensure terminations is a valid dictionary
+        if terminations is None:
+            terminations = {agent: False for agent in self.env.agents}
+    
+        # Extract agent positions and punches from environment info
         agent_positions = {
             "first_0": info.get("first_0_position"),
             "second_0": info.get("second_0_position")
@@ -53,7 +49,11 @@ class MultiAgentRL:
             "first_0": info.get("first_0_punches", 0),
             "second_0": info.get("second_0_punches", 0)
         }
-
+        hits_received = {
+            "first_0": info.get("first_0_hits_received", 0),
+            "second_0": info.get("second_0_hits_received", 0)
+        }
+    
         # Determine winner if the episode ends
         winner = None
         if any(terminations.values()):
@@ -61,14 +61,13 @@ class MultiAgentRL:
                 winner = "first_0"
             elif rewards_dict["second_0"] > rewards_dict["first_0"]:
                 winner = "second_0"
-
+    
         # Calculate custom rewards
         custom_rewards = calculate_rewards(
-            obs_dict_next, rewards_dict, agent_positions, punches, terminations, winner
+            obs_dict_next, rewards_dict, agent_positions, punches, hits_received, terminations, winner
         )
-
-        return obs_dict_next, custom_rewards, terminations, truncations, info
     
+        return obs_dict_next, custom_rewards, terminations, truncations, info
     
     
     
@@ -111,19 +110,23 @@ class MultiAgentRL:
             if episode % 10 == 0:
                 print(f"Episode {episode}/{num_episodes} completed.")
 
-def calculate_rewards(obs_dict, rewards_dict, agent_positions, punches, terminations, winner=None):
+def calculate_rewards(obs_dict, rewards_dict, agent_positions, punches, hits_received, terminations, winner=None):
     custom_rewards = {"first_0": 0.0, "second_0": 0.0}
     # Punch-Based Reward
-    custom_rewards["first_0"] += punches.get("first_0", 0) * 20.0  # Reward for landing a punch
-    custom_rewards["second_0"] += punches.get("second_0", 0) * 20.0
+    custom_rewards["first_0"] += punches.get("first_0", 0) * 200.0  # Reward for landing a punch
+    custom_rewards["second_0"] += punches.get("second_0", 0) * 200.0
+
+    # Negative Reward for Being Hit
+    custom_rewards["first_0"] -= hits_received.get("first_0", 0) * 10.0  # Penalty for receiving a punch
+    custom_rewards["second_0"] -= hits_received.get("second_0", 0) * 10.0
 
     # Winning Reward (applied at the end of the episode)
     if any(terminations.values()) and winner:
         if winner == "first_0":
-            custom_rewards["first_0"] += 10000.0  # Winning bonus
+            custom_rewards["first_0"] += 100000.0  # Winning bonus
             custom_rewards["second_0"] -= 5.0  # Losing penalty
         elif winner == "second_0":
-            custom_rewards["second_0"] += 10000.0
+            custom_rewards["second_0"] += 100000.0
             custom_rewards["first_0"] -= 5.0
 
     # Add base rewards from the environment
