@@ -113,12 +113,12 @@ class MultiAgentRL:
 def calculate_rewards(obs_dict, rewards_dict, agent_positions, punches, hits_received, terminations, winner=None):
     custom_rewards = {"first_0": 0.0, "second_0": 0.0}
     # Punch-Based Reward
-    custom_rewards["first_0"] += punches.get("first_0", 0) * 200.0  # Reward for landing a punch
-    custom_rewards["second_0"] += punches.get("second_0", 0) * 200.0
+    custom_rewards["first_0"] += punches.get("first_0", 0) * 2000.0  # Reward for landing a punch
+    custom_rewards["second_0"] += punches.get("second_0", 0) * 2000.0
 
     # Negative Reward for Being Hit
-    custom_rewards["first_0"] -= hits_received.get("first_0", 0) * 10.0  # Penalty for receiving a punch
-    custom_rewards["second_0"] -= hits_received.get("second_0", 0) * 10.0
+    custom_rewards["first_0"] += hits_received.get("first_0", 0) * 1.0  # Penalty for receiving a punch
+    custom_rewards["second_0"] += hits_received.get("second_0", 0) * 1.0
 
     # Winning Reward (applied at the end of the episode)
     if any(terminations.values()) and winner:
