@@ -112,6 +112,7 @@ class MultiAgentRL:
 
 def calculate_rewards(obs_dict, rewards_dict, agent_positions, punches, hits_received, terminations, winner=None):
     custom_rewards = {"first_0": 0.0, "second_0": 0.0}
+    
     # Punch-Based Reward
     custom_rewards["first_0"] += punches.get("first_0", 0) * 2000.0  # Reward for landing a punch
     custom_rewards["second_0"] += punches.get("second_0", 0) * 2000.0
@@ -119,6 +120,16 @@ def calculate_rewards(obs_dict, rewards_dict, agent_positions, punches, hits_rec
     # Negative Reward for Being Hit
     custom_rewards["first_0"] -= hits_received.get("first_0", 0) * 10.0  # Penalty for receiving a punch
     custom_rewards["second_0"] -= hits_received.get("second_0", 0) * 10.0
+
+    # Proximity-Based Reward
+    if agent_positions["first_0"] is not None and agent_positions["second_0"] is not None:
+        # Compute the distance between agents (e.g., Manhattan or Euclidean distance)
+        distance = np.linalg.norm(np.array(agent_positions["first_0"]) - np.array(agent_positions["second_0"]))
+        
+        # Reward for getting closer (inverse of distance, scaled appropriately)
+        proximity_reward = max(0, 1.0 / (distance + 1e-5)) * 100.0  # Add small value to avoid division by zero
+        custom_rewards["first_0"] += proximity_reward
+        custom_rewards["second_0"] += proximity_reward
 
     # Winning Reward (applied at the end of the episode)
     if any(terminations.values()) and winner:
