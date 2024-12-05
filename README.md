@@ -76,7 +76,7 @@ AtariBoxingProject/
 
 │   ├── cnn_model.py       # CNN architecture for feature extraction
 
-├── roms/                  # Contains the game ROMs (Atari Boxing files)
+├── roms/                  # Contains the game ROM (Atari Boxing files)
 
 ├── training/
 
