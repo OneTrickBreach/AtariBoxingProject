@@ -261,5 +261,3 @@ Simplifies interaction with the PettingZoo environment by:
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for more details.
 
 ---
-
-Let me know if you'd like to customize it further or add additional sections!
