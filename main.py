@@ -8,7 +8,7 @@ def main():
     parser.add_argument('--mode', type=str, choices=['train', 'evaluate'], default='train',
                         help="Mode to run the script: 'train' for training, 'evaluate' for evaluation.")
     
-    parser.add_argument('--num_episodes', type=int, default=10,
+    parser.add_argument('--num_episodes', type=int, default=0,
                         help="Number of episodes to train or evaluate.")
     parser.add_argument('--batch_size', type=int, default=32,
                         help="Batch size for experience replay during training.")
