@@ -13,7 +13,6 @@ This repository implements a **multi-agent reinforcement learning system** for t
 - [Technical Details](#technical-details)
 - [Results](#results)
 - [Future Work](#future-work)
-- [License](#license)
 
 ---
 
