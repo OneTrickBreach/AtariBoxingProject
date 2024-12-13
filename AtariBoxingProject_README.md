@@ -198,7 +198,3 @@ Simplifies interaction with the PettingZoo environment by:
 - Add visualization tools for real-time performance tracking.
 
 ---
-
-## 📜 License
-
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for more details.
