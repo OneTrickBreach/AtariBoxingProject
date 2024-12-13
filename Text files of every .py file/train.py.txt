@@ -1,0 +1,76 @@
+# training/train.py
+
+import torch
+import numpy as np
+from agents.multi_agent import MultiAgentRL
+from training.replay_buffer import ReplayBuffer
+from training.utils import save_checkpoint
+
+# training/train.py
+
+def train(num_episodes=1000, batch_size=32, target_update_freq=10, gamma=0.99):
+    """
+    Main training loop for multi-agent reinforcement learning.
+    """
+    # Initialize multi-agent environment and agents
+    multi_agent = MultiAgentRL()
+
+    # Initialize replay buffer
+    buffer = ReplayBuffer(capacity=10000)
+
+    # Training loop
+    for episode in range(num_episodes):
+        # Reset environment and get initial observations
+        obs_tuple = multi_agent.reset_environment()
+
+        # Extract observations from the first element of the tuple
+        obs_dict = obs_tuple[0]  # This is where observations are stored
+
+        done_flags = {"first_0": False, "second_0": False}
+
+        episode_reward = {"first_0": 0, "second_0": 0}
+
+        while not all(done_flags.values()):
+            # Get actions from both agents based on their respective observations
+            action_1 = multi_agent.agent_1.select_action(obs_dict["first_0"], step=episode)
+            action_2 = multi_agent.agent_2.select_action(obs_dict["second_0"], step=episode)
+
+            actions = {"first_0": action_1, "second_0": action_2}
+
+            # Step in the environment with both agents' actions
+            next_obs_tuple = multi_agent.step(actions)
+
+            # Unpack all five values returned by step()
+            next_obs_dict, rewards_dict, terminations, truncations, infos = next_obs_tuple
+
+            # Store transitions in replay buffer (for both agents)
+            buffer.add(obs_dict["first_0"], action_1, rewards_dict["first_0"], next_obs_dict["first_0"], terminations["first_0"])
+            buffer.add(obs_dict["second_0"], action_2, rewards_dict["second_0"], next_obs_dict["second_0"], terminations["second_0"])
+
+            # Update episode rewards
+            episode_reward["first_0"] += rewards_dict["first_0"]
+            episode_reward["second_0"] += rewards_dict["second_0"]
+
+            # Sample a batch from replay buffer and update both agents
+            if len(buffer) > batch_size:
+                batch = buffer.sample(batch_size)
+                multi_agent.agent_1.update(batch)
+                multi_agent.agent_2.update(batch)
+
+            # Move to the next state (update obs_dict)
+            obs_dict = next_obs_dict
+
+        # Periodically update target networks for both agents
+        if episode % target_update_freq == 0:
+            multi_agent.agent_1.update_target_network()
+            multi_agent.agent_2.update_target_network()
+
+        print(f"Episode {episode + 1}/{num_episodes} - Reward Agent 1: {episode_reward['first_0']}, Reward Agent 2: {episode_reward['second_0']}")
+
+        # Save model checkpoints periodically
+        if episode % 50 == 0:
+            save_checkpoint(multi_agent.agent_1.q_network.state_dict(), f"checkpoints/agent1_episode_{episode}.pth")
+            save_checkpoint(multi_agent.agent_2.q_network.state_dict(), f"checkpoints/agent2_episode_{episode}.pth")
+
+if __name__ == "__main__":
+    train(num_episodes=10000)

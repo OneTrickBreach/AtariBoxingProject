@@ -1,2 +1,0 @@
-# AtariBoxingProject
-FAI Final Project

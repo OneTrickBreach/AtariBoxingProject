@@ -1,0 +1,69 @@
+# agents/multi_agent.py
+
+from pettingzoo.atari import boxing_v2
+from agents.agent import DQNAgent
+
+class MultiAgentRL:
+    def __init__(self):
+        """
+        Initialize two DQN agents for multi-agent reinforcement learning in PettingZoo's Boxing environment.
+        
+         - Agent 1 plays as Player 1 in Boxing.
+         - Agent 2 plays as Player 2 in Boxing.
+         """
+        
+         # Create environment instance from PettingZoo's Boxing environment
+        self.env = boxing_v2.parallel_env(render_mode="human", auto_rom_install_path="roms")
+         
+         # Number of possible actions in Boxing environment (6 discrete actions per player)
+        num_actions = self.env.action_space('first_0').n
+
+         # Initialize two DQN agents with shared architecture but separate policies
+        input_channels = 4  # Assuming we're stacking 4 frames as input
+
+        self.agent_1 = DQNAgent(input_channels=input_channels, num_actions=num_actions)
+        self.agent_2 = DQNAgent(input_channels=input_channels, num_actions=num_actions)
+
+    def reset_environment(self):
+         """
+         Reset the environment and return initial observations for both agents.
+         """
+         return self.env.reset()
+
+    def step(self, actions):
+         """
+         Take a step in the environment with both agents' actions.
+
+         Args:
+             actions (dict): Dictionary containing actions for both agents.
+
+         Returns:
+             dict: Observations after taking a step in the environment.
+             dict: Rewards received by both agents after taking their respective actions.
+             dict: Done flags indicating whether each agent has finished its episode.
+             dict: Additional info from environment.
+         """
+         return self.env.step(actions)
+
+    def train_agents(self):
+         """
+         Main loop for training both agents in parallel mode. This can include logic such as replay buffer,
+         updating networks periodically etc., but is left simple here for clarity.
+         """
+
+         obs_dict = self.reset_environment()
+
+         done_flags = {"first_0": False, "second_0": False}
+
+         while not all(done_flags.values()):
+              # Get actions from both agents based on their respective observations
+              action_1 = self.agent_1.select_action(obs_dict["first_0"], step=0)  # Placeholder step count
+              action_2 = self.agent_2.select_action(obs_dict["second_0"], step=0)
+
+              actions = {"first_0": action_1, "second_0": action_2}
+
+              obs_dict_next, rewards_dict, done_flags, info_dict = self.step(actions)
+
+              # Here you would store transitions in replay buffer and call `update()` on both agents
+
+              obs_dict = obs_dict_next

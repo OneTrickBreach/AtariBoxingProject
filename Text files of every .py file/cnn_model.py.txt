@@ -1,0 +1,64 @@
+# models/cnn_model.py
+
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
+class CNNModel(nn.Module):
+    def __init__(self, input_channels=4, num_actions=6):
+        """
+        CNN model for processing Atari frames.
+        
+        Args:
+            input_channels (int): Number of input channels (e.g., 4 for stacked frames).
+            num_actions (int): Number of possible actions in the environment.
+        """
+        super(CNNModel, self).__init__()
+        
+        # Convolutional layers
+        self.conv1 = nn.Conv2d(in_channels=input_channels, out_channels=32, kernel_size=8, stride=4)
+        self.conv2 = nn.Conv2d(in_channels=32, out_channels=64, kernel_size=4, stride=2)
+        self.conv3 = nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1)
+        
+        # Fully connected layers
+        self.fc1 = nn.Linear(in_features=64 * 7 * 7, out_features=512)
+        self.fc2 = nn.Linear(in_features=512, out_features=num_actions)
+    
+    def forward(self, x):
+        """
+        Forward pass through the CNN.
+        
+        Args:
+            x (torch.Tensor): Input tensor with shape [batch_size, input_channels, height, width].
+        
+        Returns:
+            torch.Tensor: Output tensor representing action values or policy logits.
+        """
+        # Pass through convolutional layers with ReLU activations
+        x = F.relu(self.conv1(x))
+        x = F.relu(self.conv2(x))
+        x = F.relu(self.conv3(x))
+        
+        # Flatten the output from conv layers
+        x = x.view(x.size(0), -1)  # Flatten to [batch_size, features]
+        
+        # Pass through fully connected layers
+        x = F.relu(self.fc1(x))
+        
+        # Output layer for action values or logits
+        output = self.fc2(x)
+        
+        return output
+
+def create_cnn(input_channels=4, num_actions=6):
+    """
+    Helper function to create a CNN model.
+    
+    Args:
+        input_channels (int): Number of input channels (e.g., 4 for stacked frames).
+        num_actions (int): Number of possible actions in the environment.
+    
+    Returns:
+        CNNModel: An instance of the CNN model.
+    """
+    return CNNModel(input_channels=input_channels, num_actions=num_actions)
