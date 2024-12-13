@@ -194,6 +194,28 @@ Run unit tests to ensure code functionality:
 python test.py
 
 ```
+> Note for Linux/Unix Users:
+By default, the code is configured for Mac systems. To run on Linux/Unix systems, modify the environment initialization code in the following files:
+
+multi_agent.py
+
+cnn_model.py
+
+train.py
+
+evaluation.py
+
+
+
+
+Replace:
+
+env = boxing_v2.env(render_mode="human")
+
+with:
+
+env = boxing_v2.env(render_mode="human", auto_rom_install_path="roms")
+
 
 ---
 
