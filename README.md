@@ -24,10 +24,6 @@ This repository implements a **multi-agent reinforcement learning system** for t
 
 - [Future Work](#future-work)
 
-- [License](#license)
-
-- [Contributors](#contributors)
-
 ---
 
 ## 🌟 Features
@@ -78,7 +74,7 @@ AtariBoxingProject/
 
 │   ├── cnn_model.py       # CNN architecture for feature extraction
 
-├── roms/                  # Contains the game ROMs (Atari Boxing files)
+├── roms/                  # Contains the game ROMs (Atari Boxing files)(Add Custom ROM Paths for Windows)
 
 ├── training/
 
@@ -238,11 +234,11 @@ Simplifies interaction with the PettingZoo environment by:
 
 |------------------|----------|
 
-| Episodes Trained | 10,000   |
+| Episodes Trained | 1000  |
 
 | Final Epsilon    | 0.01     |
 
-| Average Reward   | 35.6     |
+| Average WinRate   | 67.49     |
 
 ---
 
@@ -258,18 +254,3 @@ Simplifies interaction with the PettingZoo environment by:
 
 ---
 
-## 📜 License
-
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for more details.
-
----
-
-## 👩‍💻 Contributors
-
-- **[Your Name]** - [GitHub Profile](https://github.com/your-username)
-
-Feel free to contribute by submitting pull requests or reporting issues!
-
----
-
-Let me know if you'd like to customize it further or add additional sections!
