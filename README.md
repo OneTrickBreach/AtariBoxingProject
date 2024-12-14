@@ -14,7 +14,6 @@ This repository implements a **multi-agent reinforcement learning system** for t
 - [Technical Details](#technical-details)
 - [Results](#results)
 - [Future Work](#future-work)
-- [License](#license)
 
 ---
 
@@ -53,7 +52,6 @@ AtariBoxingProject/
 │   ├── replay_buffer.py    # Experience replay buffer implementation
 │   ├── train.py            # Training script for the multi-agent system
 │   ├── utils.py            # Helper functions for the training process
-├── config.yaml             # Configuration file for hyperparameters
 ├── main.py                 # Entry point for running the project
 ├── README.md               # Project documentation
 ├── requirements.txt        # Python dependencies
@@ -83,14 +81,7 @@ AtariBoxingProject/
 
    Place the necessary Atari Boxing ROM files in the `roms/` directory. Ensure you have legal access to these files.
 
-4. **Configure Hyperparameters**
-
-   Edit `config.yaml` to customize parameters like:
-   - Learning rate
-   - Discount factor
-   - Epsilon decay
-
-5. **Operating System Limitations**
+4. **Operating System Limitations**
 
    - This project works only on **Mac/Linux/Unix** systems. **Windows systems** are not supported due to compatibility issues with the PettingZoo Atari environment.
    - The default code is configured for Mac systems. For Linux/Unix, ensure you replace the following lines:
